@@ -9,7 +9,7 @@ class FiredAmmoExtractorTest extends FreeSpec {
   import FiredAmmoExtractorTest._
 
   "should calculate count of ammo in file" in {
-    var file = tempFile(
+    val file = tempFile(
       ammo("GET", "TEST_GET"),
       ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
       ammo("GET", "TEST_GET")
@@ -20,12 +20,42 @@ class FiredAmmoExtractorTest extends FreeSpec {
     file.deleteOnExit()
   }
 
+  "should delete fired ammo from file to POST" in {
+    val file = tempFile(
+      ammo("GET", "TEST_GET"),
+      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+      ammo("GET", "TEST_GET"),
+      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+      ammo("GET", "TEST_GET")
+    )
+
+    FiredAmmoExtractor.deleteAmmo(file, 3) shouldBe 2
+    //TODO сравнить содержимое файла с ammo()+ammo()
+
+    file.deleteOnExit()
+  }
+
+  "should delete fired ammo from file to GET" in {
+    val file = tempFile(
+      ammo("GET", "TEST_GET"),
+      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+      ammo("GET", "TEST_GET"),
+      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+      ammo("GET", "TEST_GET")
+    )
+
+    FiredAmmoExtractor.deleteAmmo(file, 2) shouldBe 3
+    //TODO сравнить содержимое файла с ammo()+ammo()+ammo()
+
+    file.deleteOnExit()
+  }
+
 }
 
 object FiredAmmoExtractorTest {
 
   def tempFile(lines: String*): File = {
-    var file = File.createTempFile("extr-", ".txt")
+    val file = File.createTempFile("extr-", ".txt")
     new PrintWriter(file) { write(lines.mkString("")); close() }
     file
   }

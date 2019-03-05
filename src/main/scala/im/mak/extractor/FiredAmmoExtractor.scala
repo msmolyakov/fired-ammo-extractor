@@ -1,10 +1,11 @@
 package im.mak.extractor
 
-import java.io.File
+import java.io.{File, FileWriter}
+import java.nio.file.Files
 
 import scala.io.Source
-import scala.util.control.Breaks.{break, breakable}
 import scala.util.control.NonFatal
+import scala.util.control.Breaks.{breakable, break}
 
 object FiredAmmoExtractor {
   val sizeLinePattern = "\\d+(\\W+.*)?"
@@ -47,31 +48,56 @@ object FiredAmmoExtractor {
     isFileCorrect
   }
 
-  def ammoCount(file: File): Int = {
-    var count = 0
-    val fileReader = Source.fromFile(file).bufferedReader
+  def deleteAmmo(file: File, count: Int): Int = {
+    val reader = Source.fromFile(file).bufferedReader
+    val tempFile = new File(file.getAbsolutePath + ".tmp")
+    val writer = new FileWriter(tempFile)
+    var skipped = 0
+    var remaining = 0
     var line: String = null
 
-    while ({line = fileReader.readLine; line != null}) {
+    breakable { while ({line = reader.readLine; line != null}) {
       if (line.matches(sizeLinePattern)) {
-        line = fileReader.readLine
+        reader.mark(0)
+        line = reader.readLine
+        if (line.matches(methodLinePattern)) {
+            if (skipped < count)
+              skipped += 1
+            else break
+        }
+      }
+    }}
+
+    reader.reset()
+    while ({line = reader.readLine; line != null}) {
+      if (line.matches(methodLinePattern))
+        remaining += 1
+      writer.write(line)
+    }
+
+    reader.close()
+    Files.delete(file.toPath)
+    writer.close()
+    tempFile.renameTo(file)
+
+    remaining
+  }
+
+  def ammoCount(file: File): Int = {
+    val reader = Source.fromFile(file).bufferedReader
+    var count = 0
+    var line: String = null
+
+    while ({line = reader.readLine; line != null}) {
+      if (line.matches(sizeLinePattern)) {
+        line = reader.readLine
         if (line.matches(methodLinePattern)) {
           count += 1
-
-          val isPost = line.startsWith("POST")
-          breakable {
-            while ( {line = fileReader.readLine; line != null} ) {
-              if (line.isEmpty) {
-                if (isPost) fileReader.readLine
-                break
-              }
-            }
-          }
         }
       }
     }
 
-    fileReader.close()
+    reader.close()
     count
   }
 }

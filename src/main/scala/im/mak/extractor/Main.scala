@@ -12,7 +12,7 @@ object Main extends App {
   }
 
   if (count > 0)
-    println("delete ammo")
+    println(deleteAmmo(file, count))
   else println(ammoCount(file))
 
 }
