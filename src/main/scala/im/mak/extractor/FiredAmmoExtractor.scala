@@ -2,14 +2,16 @@ package im.mak.extractor
 
 import java.io.{File, FileWriter}
 import java.nio.file.Files
+import java.util.Scanner
+import java.util.regex.Pattern
 
 import scala.io.Source
 import scala.util.control.NonFatal
-import scala.util.control.Breaks.{breakable, break}
+import scala.util.control.Breaks.{break, breakable}
 
 object FiredAmmoExtractor {
-  val sizeLinePattern = "\\d+(\\W+.*)?"
-  val methodLinePattern = "(GET|POST|PUT|DELETE)\\W.*"
+  val sizeLinePattern = "\\d+(\\W+.*)?\\R?"
+  val methodLinePattern = "(GET|POST|PUT|DELETE)\\W.*\\R?"
 
   def parse(args: Array[String]): (File, Int) = {
     if (args.length == 0 || args.length > 2) {
@@ -49,27 +51,32 @@ object FiredAmmoExtractor {
   }
 
   def deleteAmmo(file: File, count: Int): Int = {
-    val reader = Source.fromFile(file).bufferedReader
+    val linePattern = Pattern.compile(".*\\R|.+\\z")
+    val reader = new Scanner(file, "UTF-8")
     val tempFile = new File(file.getAbsolutePath + ".tmp")
     val writer = new FileWriter(tempFile)
     var skipped = 0
     var remaining = 0
     var line: String = null
+    var prevLines: String = null
 
-    breakable { while ({line = reader.readLine; line != null}) {
+    breakable { while ({line = reader.findWithinHorizon(linePattern, 0); line != null}) {
       if (line.matches(sizeLinePattern)) {
-        reader.mark(0)
-        line = reader.readLine
+        prevLines = line
+        line = reader.findWithinHorizon(linePattern, 0)
         if (line.matches(methodLinePattern)) {
             if (skipped < count)
               skipped += 1
-            else break
+            else {
+              prevLines += line
+              break
+            }
         }
       }
     }}
 
-    reader.reset()
-    while ({line = reader.readLine; line != null}) {
+    writer.write(prevLines)
+    while ({line = reader.findWithinHorizon(linePattern, 0); line != null}) {
       if (line.matches(methodLinePattern))
         remaining += 1
       writer.write(line)
