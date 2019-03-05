@@ -1,9 +1,12 @@
 package im.mak.extractor
 
 import java.io.{File, PrintWriter}
+import java.nio.file.{Files, Paths}
 
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers._
+
+import scala.io.Source
 
 class FiredAmmoExtractorTest extends FreeSpec {
   import FiredAmmoExtractorTest._
@@ -30,7 +33,10 @@ class FiredAmmoExtractorTest extends FreeSpec {
     )
 
     FiredAmmoExtractor.deleteAmmo(file, 3) shouldBe 2
-    //TODO сравнить содержимое файла с ammo()+ammo()
+
+    Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
+      (ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+        + ammo("GET", "TEST_GET")).getBytes
 
     file.deleteOnExit()
   }
@@ -45,7 +51,10 @@ class FiredAmmoExtractorTest extends FreeSpec {
     )
 
     FiredAmmoExtractor.deleteAmmo(file, 2) shouldBe 3
-    //TODO сравнить содержимое файла с ammo()+ammo()+ammo()
+
+    Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
+      (ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+        + ammo("GET", "TEST_GET")).getBytes
 
     file.deleteOnExit()
   }
