@@ -75,7 +75,17 @@ object FiredAmmoExtractor {
       }
     }}
 
+    remaining += 1
     writer.write(prevLines)
+    breakable {
+      while ( {
+        line = reader.findWithinHorizon(linePattern, 0); line != null
+      }) {
+        writer.write(line)
+        if (line.matches(sizeLinePattern))
+          break
+      }
+    }
     while ({line = reader.findWithinHorizon(linePattern, 0); line != null}) {
       if (line.matches(methodLinePattern))
         remaining += 1

@@ -6,57 +6,72 @@ import java.nio.file.{Files, Paths}
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers._
 
-import scala.io.Source
-
 class FiredAmmoExtractorTest extends FreeSpec {
   import FiredAmmoExtractorTest._
 
-  "should calculate count of ammo in file" in {
-    val file = tempFile(
-      ammo("GET", "TEST_GET"),
-      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
-      ammo("GET", "TEST_GET")
-    )
+  "isFileStartsFromHttpRequest" - {
+    "should accept file that starts correctly" in {
+      val file = tempFile(
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+      )
+      FiredAmmoExtractor.isFileStartsFromHttpRequest(file) shouldBe true
+      file.deleteOnExit()
+    }
 
-    FiredAmmoExtractor.ammoCount(file) shouldBe 3
-
-    file.deleteOnExit()
+    "should return error when file starts incorrectly" in {
+      val file = tempFile(
+        ammo("GET", "TEST_GET").replaceFirst("\\d+(\\W+.*)?\\R?", ""),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+      )
+      FiredAmmoExtractor.isFileStartsFromHttpRequest(file) shouldBe false
+      file.deleteOnExit()
+    }
   }
 
-  "should delete fired ammo from file to POST" in {
-    val file = tempFile(
-      ammo("GET", "TEST_GET"),
-      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
-      ammo("GET", "TEST_GET"),
-      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
-      ammo("GET", "TEST_GET")
-    )
-
-    FiredAmmoExtractor.deleteAmmo(file, 3) shouldBe 2
-
-    Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
-      (ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
-        + ammo("GET", "TEST_GET")).getBytes
-
-    file.deleteOnExit()
+  "ammoCount" - {
+    "should calculate count of ammo in file" in {
+      val file = tempFile(
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+        ammo("GET", "TEST_GET")
+      )
+      FiredAmmoExtractor.ammoCount(file) shouldBe 3
+      file.deleteOnExit()
+    }
   }
 
-  "should delete fired ammo from file to GET" in {
-    val file = tempFile(
-      ammo("GET", "TEST_GET"),
-      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
-      ammo("GET", "TEST_GET"),
-      ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
-      ammo("GET", "TEST_GET")
-    )
+  "deleteAmmo" - {
+    "should delete fired ammo from file to POST" in {
+      val file = tempFile(
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+        ammo("GET", "TEST_GET")
+      )
+      FiredAmmoExtractor.deleteAmmo(file, 3) shouldBe 2
+      Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
+        (ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+          + ammo("GET", "TEST_GET")).getBytes
+      file.deleteOnExit()
+    }
 
-    FiredAmmoExtractor.deleteAmmo(file, 2) shouldBe 3
-
-    Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
-      (ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
-        + ammo("GET", "TEST_GET")).getBytes
-
-    file.deleteOnExit()
+    "should delete fired ammo from file to GET" in {
+      val file = tempFile(
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+        ammo("GET", "TEST_GET"),
+        ammo("POST", "TEST_POST", "{\"key\": \"value\"}"),
+        ammo("GET", "TEST_GET")
+      )
+      FiredAmmoExtractor.deleteAmmo(file, 2) shouldBe 3
+      Files.readAllBytes(Paths.get(file.getPath)) shouldEqual
+        (ammo("GET", "TEST_GET")
+          + ammo("POST", "TEST_POST", "{\"key\": \"value\"}")
+          + ammo("GET", "TEST_GET")).getBytes
+      file.deleteOnExit()
+    }
   }
 
 }
