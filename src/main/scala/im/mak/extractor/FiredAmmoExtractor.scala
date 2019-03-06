@@ -15,8 +15,8 @@ object FiredAmmoExtractor {
 
   def parse(args: Array[String]): (File, Int) = {
     if (args.length == 0 || args.length > 2) {
-      println("java -jar delreq.jar [file_path]\t\t\tReturns the number of ammo in the file")
-      println("java -jar delreq.jar [file_path] [ammo_count]\tRemoves the number of ammo from the beginning of the file. Returns the number of remaining ammo in the file")
+      println("java -jar fired-ammo-extractor.jar [file_path]\t\t\t\tReturns the number of ammo in the file")
+      println("java -jar fired-ammo-extractor.jar [file_path] [ammo_count]\tRemoves the number of ammo from the beginning of the file. Returns the number of remaining ammo in the file")
       System.exit(0)
     }
 
